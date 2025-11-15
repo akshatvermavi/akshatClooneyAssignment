@@ -1,0 +1,9 @@
+# Python virtual environments
+.venv/
+backend/.venv/
+frontend/.venv/
+
+# Local environment files (do not commit secrets)
+.env
+backend/.env
+frontend/.env

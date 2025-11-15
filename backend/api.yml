@@ -1,0 +1,326 @@
+openapi: 3.0.3
+info:
+  title: Clooney Asana Clone API
+  version: 0.1.0
+  description: Backend API approximating Asana Home/Projects/Tasks.
+servers:
+  - url: http://localhost:8000
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+  /api/home:
+    get:
+      summary: Home summary
+      tags: [home]
+      responses:
+        '200':
+          description: Home summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeResponse'
+  /api/projects:
+    get:
+      summary: List projects
+      tags: [projects]
+      parameters:
+        - in: query
+          name: workspace_id
+          schema:
+            type: integer
+          required: false
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectRead'
+    post:
+      summary: Create project
+      tags: [projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: Created project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRead'
+        '400':
+          description: Invalid workspace
+  /api/projects/{project_id}:
+    get:
+      summary: Get project
+      tags: [projects]
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectRead'
+        '404':
+          description: Not found
+  /api/projects/{project_id}/sections:
+    get:
+      summary: List sections for project
+      tags: [projects]
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SectionRead'
+        '404':
+          description: Project not found
+  /api/projects/{project_id}/tasks:
+    get:
+      summary: List tasks for project
+      tags: [projects]
+      parameters:
+        - in: path
+          name: project_id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: assignee
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskRead'
+        '404':
+          description: Project not found
+        '422':
+          description: Invalid status
+  /api/tasks/{task_id}:
+    get:
+      summary: Get task
+      tags: [tasks]
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRead'
+        '404':
+          description: Task not found
+    patch:
+      summary: Update task
+      tags: [tasks]
+      parameters:
+        - in: path
+          name: task_id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Updated task
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRead'
+        '404':
+          description: Task not found
+components:
+  schemas:
+    WorkspaceRead:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+    ProjectCreate:
+      type: object
+      required: [name, workspace_id]
+      properties:
+        name:
+          type: string
+        workspace_id:
+          type: integer
+        color:
+          type: string
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+    ProjectRead:
+      allOf:
+        - $ref: '#/components/schemas/ProjectCreate'
+        - type: object
+          properties:
+            id:
+              type: integer
+    SectionRead:
+      type: object
+      properties:
+        id:
+          type: integer
+        project_id:
+          type: integer
+        name:
+          type: string
+        order_index:
+          type: integer
+    TaskBase:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        status:
+          type: string
+        assignee:
+          type: string
+          nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        priority:
+          type: string
+          nullable: true
+    TaskCreate:
+      allOf:
+        - $ref: '#/components/schemas/TaskBase'
+        - type: object
+          required: [name, project_id]
+          properties:
+            project_id:
+              type: integer
+            section_id:
+              type: integer
+              nullable: true
+    TaskUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        assignee:
+          type: string
+        due_date:
+          type: string
+          format: date
+        priority:
+          type: string
+        section_id:
+          type: integer
+    TaskRead:
+      allOf:
+        - $ref: '#/components/schemas/TaskCreate'
+        - type: object
+          properties:
+            id:
+              type: integer
+            created_at:
+              type: string
+              format: date-time
+            completed_at:
+              type: string
+              format: date-time
+              nullable: true
+    HomeProjectSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string
+          nullable: true
+        icon:
+          type: string
+          nullable: true
+    HomeTaskSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        project_id:
+          type: integer
+        project_name:
+          type: string
+        status:
+          type: string
+    HomeResponse:
+      type: object
+      properties:
+        my_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeTaskSummary'
+        recent_projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeProjectSummary'
